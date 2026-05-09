@@ -1,72 +1,55 @@
 import discord
-from flask import Flask
 import os
-os.environ["PYTHONUNBUFFERED"] = "1"
-import asyncio
-import threading
 
 TOKEN = os.getenv("TOKEN")
 
 GUILD_ID = 1385264203719377037
 USER_ID = 611092749088849921
-
-app = Flask(__name__)
+ROLE_ID = 1502766063467626647
 
 intents = discord.Intents.default()
 intents.members = True
 
 client = discord.Client(intents=intents)
 
-loop = None
+
+@client.event
+async def on_ready():
+    print(f"Bot online: {client.user}")
 
 
-@app.route("/")
-def home():
-    return "Bot starting, try again in 10-20s"
-
-
-@app.route("/toggle")
-def toggle():
-    if loop is None:
-        return "Bot not ready"
-
-    asyncio.run_coroutine_threadsafe(toggle_role(), loop)
-    return "OK"
-
-
-async def toggle_role():
-    await client.wait_until_ready()
-
+async def toggle_mute():
     guild = client.get_guild(GUILD_ID)
-    if not guild:
+    if guild is None:
+        print("Guild not found")
         return
 
     member = guild.get_member(USER_ID)
-    if not member:
+    if member is None:
+        print("User not found")
         return
 
-    role = discord.utils.get(guild.roles, name="Muted")
-    if not role:
+    role = guild.get_role(ROLE_ID)
+    if role is None:
+        print("Role not found")
         return
 
     if role in member.roles:
         await member.remove_roles(role)
+        print("Unmuted user")
     else:
         await member.add_roles(role)
+        print("Muted user")
 
 
 @client.event
-async def on_ready():
-    global loop
-    loop = asyncio.get_running_loop()
-    print(f"Bot online: {client.user}")
+async def on_message(message):
+    if message.author.bot:
+        return
 
+    # Stream Deck Lösung (über Discord Nachricht)
+    if message.content == "!togglemute":
+        await toggle_mute()
 
-def run_web():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
-
-
-threading.Thread(target=run_web).start()
 
 client.run(TOKEN)
