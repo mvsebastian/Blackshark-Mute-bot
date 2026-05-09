@@ -1,6 +1,7 @@
 import discord
 from flask import Flask
 import os
+os.environ["PYTHONUNBUFFERED"] = "1"
 import asyncio
 import threading
 
