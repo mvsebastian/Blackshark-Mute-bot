@@ -3,7 +3,6 @@ from flask import Flask
 import os
 import asyncio
 import threading
-import time
 
 TOKEN = os.getenv("TOKEN")
 
@@ -18,7 +17,6 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 loop = None
-ready_flag = False
 
 
 @app.route("/")
@@ -28,34 +26,26 @@ def home():
 
 @app.route("/toggle")
 def toggle():
-    global ready_flag, loop
-
-    # kurze Wartezeit bis Bot ready ist
-    timeout = 15
-    waited = 0
-
-    while not ready_flag and waited < timeout:
-        time.sleep(0.5)
-        waited += 0.5
-
-    if not ready_flag or loop is None:
-        return "Bot still starting, try again"
+    if loop is None:
+        return "Bot not ready"
 
     asyncio.run_coroutine_threadsafe(toggle_role(), loop)
     return "OK"
 
 
 async def toggle_role():
+    await client.wait_until_ready()
+
     guild = client.get_guild(GUILD_ID)
-    if guild is None:
+    if not guild:
         return
 
     member = guild.get_member(USER_ID)
-    if member is None:
+    if not member:
         return
 
     role = discord.utils.get(guild.roles, name="Muted")
-    if role is None:
+    if not role:
         return
 
     if role in member.roles:
@@ -66,9 +56,8 @@ async def toggle_role():
 
 @client.event
 async def on_ready():
-    global loop, ready_flag
+    global loop
     loop = asyncio.get_running_loop()
-    ready_flag = True
     print(f"Bot online: {client.user}")
 
 
