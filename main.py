@@ -21,7 +21,7 @@ loop = None
 
 @app.route("/")
 def home():
-    return "Bot is running"
+    return "Bot starting, try again in 10-20s"
 
 
 @app.route("/toggle")
